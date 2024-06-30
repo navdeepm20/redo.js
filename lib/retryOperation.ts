@@ -5,10 +5,12 @@ export interface IRetryOperation {
   onErrorCallback: (error?: Error) => void;
   onSuccessCallback: (response?: any) => void;
   afterLastAttemptErrorCallback?: (error?: any) => void;
+  incrementalDelayFactor?: number; // Optional factor to increase the delay
 }
 
-const wait = (delay: number) =>
-  new Promise((resolve) => setTimeout(resolve, delay));
+const sleep = (delay: number) => {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+};
 
 async function retryOperation({
   retryCount,
@@ -17,9 +19,11 @@ async function retryOperation({
   onErrorCallback,
   onSuccessCallback,
   afterLastAttemptErrorCallback,
+  incrementalDelayFactor = 1, // Default factor is 1 (no increment)
 }: IRetryOperation) {
   let noOfRetries = 0;
   let lastError: any = null;
+  let currentDelay = retryDelay;
 
   const shouldRetry = () =>
     retryCount === "infinite" || noOfRetries < retryCount;
@@ -27,8 +31,8 @@ async function retryOperation({
   while (shouldRetry()) {
     noOfRetries++;
     try {
-      if (retryDelay > 0) {
-        await wait(retryDelay);
+      if (currentDelay > 0 && noOfRetries > 1) {
+        await sleep(currentDelay);
       }
       const response = retryCallback();
       onSuccessCallback(response);
@@ -36,6 +40,7 @@ async function retryOperation({
     } catch (error) {
       lastError = error;
       onErrorCallback(error);
+      currentDelay *= incrementalDelayFactor; // Increase the delay
     }
   }
 
@@ -43,7 +48,6 @@ async function retryOperation({
     afterLastAttemptErrorCallback(lastError);
   }
 }
-
 interface TRetryAsyncOperationF extends IRetryOperation {
   retryAsyncCallback: () => Promise<void>;
 }
@@ -57,9 +61,11 @@ async function retryAsyncOperation({
   onErrorCallback,
   onSuccessCallback,
   afterLastAttemptErrorCallback,
+  incrementalDelayFactor = 1, // Default factor is 1 (no increment)
 }: TRetryAsyncOperation) {
   let noOfRetries = 0;
   let lastError: any = null;
+  let currentDelay = retryDelay;
 
   const shouldRetry = () =>
     retryCount === "infinite" || noOfRetries < retryCount;
@@ -67,12 +73,16 @@ async function retryAsyncOperation({
   while (shouldRetry()) {
     noOfRetries++;
     try {
+      if (currentDelay > 0 && noOfRetries > 1) {
+        await sleep(currentDelay);
+      }
       const response = await retryAsyncCallback();
       onSuccessCallback(response);
       return;
     } catch (error) {
       lastError = error;
       onErrorCallback(error);
+      currentDelay *= incrementalDelayFactor; // Increase the delay
     }
   }
 
