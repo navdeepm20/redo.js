@@ -1,4 +1,4 @@
-export interface IRetryOperation {
+interface RetryOperation {
   retryCount: number | "infinite";
   retryDelay: number;
   retryCallback: (payload?: any) => any;
@@ -7,6 +7,12 @@ export interface IRetryOperation {
   afterLastAttemptErrorCallback?: (error?: any) => void;
   incrementalDelayFactor?: number; // Optional factor to increase the delay
 }
+
+interface RetryAsyncOperationExtended extends RetryOperation {
+  retryAsyncCallback: () => Promise<void>;
+}
+
+type RetryAsyncOperation = Omit<RetryAsyncOperationExtended, "retryCallback">;
 
 const sleep = (delay: number) => {
   return new Promise((resolve) => setTimeout(resolve, delay));
@@ -20,7 +26,7 @@ async function retryOperation({
   onSuccessCallback,
   afterLastAttemptErrorCallback,
   incrementalDelayFactor = 1, // Default factor is 1 (no increment)
-}: IRetryOperation) {
+}: RetryOperation) {
   let noOfRetries = 0;
   let lastError: any = null;
   let currentDelay = retryDelay;
@@ -39,7 +45,7 @@ async function retryOperation({
       return;
     } catch (error) {
       lastError = error;
-      onErrorCallback(error);
+      onErrorCallback(error as Error);
       currentDelay *= incrementalDelayFactor; // Increase the delay
     }
   }
@@ -48,11 +54,6 @@ async function retryOperation({
     afterLastAttemptErrorCallback(lastError);
   }
 }
-interface TRetryAsyncOperationF extends IRetryOperation {
-  retryAsyncCallback: () => Promise<void>;
-}
-
-type TRetryAsyncOperation = Omit<TRetryAsyncOperationF, "retryCallback">;
 
 async function retryAsyncOperation({
   retryCount,
@@ -62,7 +63,7 @@ async function retryAsyncOperation({
   onSuccessCallback,
   afterLastAttemptErrorCallback,
   incrementalDelayFactor = 1, // Default factor is 1 (no increment)
-}: TRetryAsyncOperation) {
+}: RetryAsyncOperation) {
   let noOfRetries = 0;
   let lastError: any = null;
   let currentDelay = retryDelay;
@@ -81,7 +82,7 @@ async function retryAsyncOperation({
       return;
     } catch (error) {
       lastError = error;
-      onErrorCallback(error);
+      onErrorCallback(error as Error);
       currentDelay *= incrementalDelayFactor; // Increase the delay
     }
   }
@@ -91,4 +92,9 @@ async function retryAsyncOperation({
   }
 }
 
-export { retryOperation, retryAsyncOperation };
+export {
+  retryOperation,
+  retryAsyncOperation,
+  RetryOperation,
+  RetryAsyncOperation,
+};

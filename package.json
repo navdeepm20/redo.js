@@ -1,16 +1,16 @@
 {
-  "name": "retry.js",
+  "name": "must-retry.js",
   "version": "1.0.0",
-  "description": "A simple but powerfull library for your retrying operations.",
+  "description": "A simple but powerful library for your retrying operations.",
   "main": "dist/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
-  },
   "types": "dist/index.d.ts",
   "files": [
     "/dist"
   ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
   "keywords": [
     "retry.js",
     "retry",
