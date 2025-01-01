@@ -1,6 +1,6 @@
 {
-  "name": "must-retry.js",
-  "version": "1.0.0",
+  "name": "retry.js",
+  "version": "1.0.1",
   "description": "A simple but powerful library for your retrying operations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +14,8 @@
   "keywords": [
     "retry.js",
     "retry",
-    "js"
+    "js",
+    "retryoperation"
   ],
   "author": "Navdeep Mishra",
   "license": "MIT",
