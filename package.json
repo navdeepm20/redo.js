@@ -1,5 +1,5 @@
 {
-  "name": "retry.js",
+  "name": "redo.js",
   "version": "1.0.1",
   "description": "A simple but powerful library for your retrying operations.",
   "main": "dist/index.js",
@@ -12,8 +12,11 @@
     "build": "tsc"
   },
   "keywords": [
-    "retry.js",
+    "redo.js",
+    "redo",
+    "reattempt",
     "retry",
+    "retry.js",
     "js",
     "retryoperation"
   ],
