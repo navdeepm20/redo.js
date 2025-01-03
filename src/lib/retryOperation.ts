@@ -2,7 +2,7 @@ interface RetryOperation {
   retryCount: number | "infinite";
   retryDelay: number;
   retryCallback: (payload?: any) => any;
-  onErrorCallback: (error?: Error) => void;
+  onErrorCallback: (error?: Error, currentRetryCount?: number) => void;
   onSuccessCallback: (response?: any) => void;
   afterLastAttemptErrorCallback?: (error?: any) => void;
   incrementalDelayFactor?: number; // Optional factor to increase the delay
@@ -14,80 +14,83 @@ interface RetryAsyncOperationExtended extends RetryOperation {
 
 type RetryAsyncOperation = Omit<RetryAsyncOperationExtended, "retryCallback">;
 
-const sleep = (delay: number) => {
+// Utility function to introduce a delay
+const sleep = (delay: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, delay));
 };
 
+// Synchronous retry operation with error handling and exponential delay
 async function retryOperation({
-  retryCount,
-  retryDelay,
   retryCallback,
   onErrorCallback,
   onSuccessCallback,
   afterLastAttemptErrorCallback,
-  incrementalDelayFactor = 1, // Default factor is 1 (no increment)
-}: RetryOperation) {
-  let noOfRetries = 0;
+  retryCount = 3, // Default retry count is 3
+  retryDelay = 1000, // Default is 1 second
+  incrementalDelayFactor = 1.5, // Default factor is 1.5
+}: RetryOperation): Promise<void> {
+  let currentRetryCount = 0;
   let lastError: any = null;
   let currentDelay = retryDelay;
 
-  const shouldRetry = () =>
-    retryCount === "infinite" || noOfRetries < retryCount;
-
-  while (shouldRetry()) {
-    noOfRetries++;
+  // Loop until retries are exhausted or successful
+  while (retryCount === "infinite" || currentRetryCount <= retryCount) {
     try {
-      if (currentDelay > 0 && noOfRetries > 1) {
-        await sleep(currentDelay);
+      if (currentDelay > 0 && currentRetryCount > 0) {
+        await sleep(currentDelay); // Wait for the delay if it's not the first attempt
       }
+
       const response = retryCallback();
-      onSuccessCallback(response);
+      onSuccessCallback(response); // Call success callback on success
       return;
     } catch (error) {
       lastError = error;
-      onErrorCallback(error as Error);
-      currentDelay *= incrementalDelayFactor; // Increase the delay
+      onErrorCallback(error as Error, currentRetryCount); // Handle error with retry count
+      currentDelay *= incrementalDelayFactor; // Increase the delay for the next retry
+      currentRetryCount++;
     }
   }
 
-  if (noOfRetries === retryCount && afterLastAttemptErrorCallback) {
+  // Call the final error callback if retries are exhausted
+  if (afterLastAttemptErrorCallback) {
     afterLastAttemptErrorCallback(lastError);
   }
 }
 
+// Asynchronous retry operation with error handling and exponential delay
 async function retryAsyncOperation({
-  retryCount,
-  retryDelay,
   retryAsyncCallback,
   onErrorCallback,
   onSuccessCallback,
   afterLastAttemptErrorCallback,
-  incrementalDelayFactor = 1, // Default factor is 1 (no increment)
-}: RetryAsyncOperation) {
-  let noOfRetries = 0;
+  retryCount = 3, // Default retry count is 3
+  retryDelay = 1000, // Default is 1 second
+  incrementalDelayFactor = 1.5, // Default factor is 1.5
+}: RetryAsyncOperation): Promise<void> {
+  let currentRetryCount = 0;
   let lastError: any = null;
   let currentDelay = retryDelay;
 
-  const shouldRetry = () =>
-    retryCount === "infinite" || noOfRetries < retryCount;
-
-  while (shouldRetry()) {
-    noOfRetries++;
+  // Loop until retries are exhausted or successful
+  while (retryCount === "infinite" || currentRetryCount <= retryCount) {
     try {
-      if (currentDelay > 0 && noOfRetries > 1) {
-        await sleep(currentDelay);
+      if (currentDelay > 0 && currentRetryCount > 0) {
+        await sleep(currentDelay); // Wait for the delay if it's not the first attempt
       }
+
       const response = await retryAsyncCallback();
-      onSuccessCallback(response);
+      onSuccessCallback(response); // Call success callback on success
       return;
     } catch (error) {
       lastError = error;
-      onErrorCallback(error as Error);
-      currentDelay *= incrementalDelayFactor; // Increase the delay
+      onErrorCallback(error as Error, currentRetryCount); // Handle error with retry count
+      currentDelay *= incrementalDelayFactor; // Increase the delay for the next retry
+      currentRetryCount++;
     }
   }
 
-  if (noOfRetries === retryCount && afterLastAttemptErrorCallback) {
+  // Call the final error callback if retries are exhausted
+  if (afterLastAttemptErrorCallback) {
     afterLastAttemptErrorCallback(lastError);
   }
 }
