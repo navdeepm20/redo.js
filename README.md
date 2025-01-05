@@ -2,7 +2,7 @@
 
 > A powerful and lightweight library to help you write robust and fault-tolerant code.
 
-<img src="https://img.shields.io/badge/Version-1.0.2-brightgreen" alt="Version">
+<img src="https://img.shields.io/badge/Version-1.0.1-brightgreen" alt="Version">
 
 ---
 
