@@ -1,6 +1,6 @@
 {
   "name": "redo.js",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "A simple but powerful library for your retrying operations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
