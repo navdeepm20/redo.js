@@ -1,8 +1,8 @@
 # Redo.js
 
-> A powerful and lightweight library to help you write robust and fault-tolerant code.
+> A simple but powerful library for retrying operations — sync or async.
 
-<img src="https://img.shields.io/badge/Version-1.0.1-brightgreen" alt="Version">
+<img src="https://img.shields.io/badge/Version-1.3.0-brightgreen" alt="Version">
 
 ---
 
@@ -10,21 +10,19 @@
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Retry Synchronous Operations](#retry-synchronous-operations)
-  - [Retry Asynchronous Operations](#retry-asynchronous-operations)
+  - [Synchronous](#synchronous)
+  - [Asynchronous](#asynchronous)
+  - [Options](#options)
+- [Migration from &lt; 1.3.0](#migration-from--130)
 - [License](#license)
 
 ---
 
 ## Installation
 
-Using npm:
-
 ```bash
 npm install redo.js
 ```
-
-Using yarn:
 
 ```bash
 yarn add redo.js
@@ -34,66 +32,81 @@ yarn add redo.js
 
 ## Usage
 
-### Retry Synchronous Operations
+One API: `retryOperation`. Pass a sync or async `retryCallback`.
+
+### Synchronous
 
 ```javascript
-// Import the function
 import { retryOperation } from "redo.js";
 
-retryOperation({
-  retryCount: 3, // Optional. Default: 3. Number of retry attempts
-  retryDelay: 1000, // Optional. Default: 1000ms. Delay in ms between retries
-  // incrementalDelayFactor: 2, // Optional. Default: 1.5 Exponential backoff factor
+await retryOperation({
   retryCallback: () => {
-    console.log("Retrying operation...");
-    throw new Error("Operation failed");
-  },
-  onErrorCallback: () => {
-    console.log("An error occurred.");
-  },
-  onSuccessCallback: () => {
-    console.log("Operation succeeded!");
-  },
-  afterLastAttemptErrorCallback: (error) => {
-    console.error("Final error:", error.message);
-  },
-});
-```
-
-### Retry Asynchronous Operations
-
-```javascript
-import axios from "axios";
-import { retryAsyncOperation } from "redo.js";
-
-const fetchData = async () => {
-  return await axios({
-    url: "https://jsonplaceholder.typicode.com/posts", // Example endpoint
-    method: "GET",
-  });
-};
-
-retryAsyncOperation({
-  retryCount: 3, // Optional. Default: 3. Number of retry attempts
-  retryDelay: 1000, // Optional. Default: 1000ms. Delay in ms between retries
-  // incrementalDelayFactor: 2, // Optional. Default: 1.5 Exponential backoff factor
-  retryAsyncCallback: async () => {
-    return await fetchData();
+    // your operation
+    return "ok";
   },
   onErrorCallback: (error, currentRetryCount) => {
-    console.log(`Retry #${currentRetryCount} failed: ${error.message}`);
+    console.log(`Attempt ${currentRetryCount} failed:`, error.message);
   },
   onSuccessCallback: (response) => {
-    console.log("Operation succeeded with status:", response.status);
+    console.log("Succeeded:", response);
+  },
+  afterLastAttemptErrorCallback: (error) => {
+    console.error("All retries failed:", error.message);
+  },
+});
+```
+
+### Asynchronous
+
+```javascript
+import { retryOperation } from "redo.js";
+
+await retryOperation({
+  retryCount: 3,
+  retryDelay: 1000,
+  retryCallback: async () => {
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  },
+  onErrorCallback: async (error, currentRetryCount) => {
+    console.log(`Retry #${currentRetryCount} failed:`, error.message);
+  },
+  onSuccessCallback: (data) => {
+    console.log("Succeeded with", data.length, "posts");
   },
   afterLastAttemptErrorCallback: (error) => {
     console.error("Final error:", error.message);
   },
 });
 ```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `retryCallback` | `(payload?) => T \| Promise<T>` | — | **Required.** Function to retry (sync or async). |
+| `retryCount` | `number \| "infinite"` | `3` | Max retries after the first attempt. |
+| `retryDelay` | `number` | `1000` | Initial delay between retries (ms). |
+| `incrementalDelayFactor` | `number` | `1.5` | Backoff multiplier (capped at 30s). |
+| `onErrorCallback` | `(error?, count?) => void \| Promise<void>` | — | Called after each failed attempt. |
+| `onSuccessCallback` | `(response) => void \| Promise<void>` | — | Called when the operation succeeds. |
+| `afterLastAttemptErrorCallback` | `(error?) => void \| Promise<void>` | — | Called when retries are exhausted. |
+| `retryCondition` | `(count, lastError) => boolean` | — | Return `false` to stop retrying early. |
+| `enableLogging` | `boolean` | `true` | Enable internal log messages. |
+| `logCallback` | `(message: string) => void` | — | Receives log messages when logging is enabled. |
+
+---
+
+## Migration from &lt; 1.3.0
+
+- `retryAsyncOperation` / `retryAsyncCallback` were removed. Use `retryOperation` with an async `retryCallback`.
+- `retryCallback` is required.
+
+See [CHANGELOG.md](./CHANGELOG.md) for the full list of changes.
 
 ---
 
 ## License
 
-Refer to the LICENSE file in the repository.
+MIT — see the [LICENSE](./LICENSE) file.
