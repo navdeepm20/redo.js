@@ -1,12 +1,14 @@
 interface RetryOperation<TResponse> {
   retryCount?: number | "infinite";
   retryDelay?: number;
-  retryCallback?: (payload?: any) => TResponse | Promise<TResponse>;
+  retryCallback: (payload?: any) => TResponse | Promise<TResponse>;
   onErrorCallback?: (
     error?: Error,
-    currentRetryCount?: number
+    currentRetryCount?: number,
   ) => void | Promise<void>;
-  onSuccessCallback?: (response: TResponse) => void | Promise<void>;
+  onSuccessCallback?: (
+    response: TResponse | Awaited<TResponse>,
+  ) => void | Promise<void>;
   afterLastAttemptErrorCallback?: (error?: any) => void | Promise<void>;
   incrementalDelayFactor?: number; // Optional factor to increase the delay
   logCallback?: (message: string) => void; // Optional logging mechanism
@@ -92,7 +94,7 @@ async function retryOperation<TResponse>({
         try {
           const errorResponse = onErrorCallback(
             error as Error,
-            currentRetryCount
+            currentRetryCount,
           );
           if (errorResponse instanceof Promise) await errorResponse;
         } catch (callbackError) {
